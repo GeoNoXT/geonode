@@ -23,7 +23,6 @@ from uuid import uuid4
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import Exception
 
 from geonode.groups.models import GroupProfile
 from geonode.base.populate_test_data import create_models
@@ -229,11 +228,15 @@ class TestResourceManager(GeoNodeBaseTestSupport):
     def test_set_permissions(self):
         norman = get_user_model().objects.get(username="norman")
         anonymous = get_user_model().objects.get(username="AnonymousUser")
-        admin_user = get_user_model().objects.create(username="adminuser", is_superuser=True, is_staff=True)
-        new_owner = get_user_model().objects.create(username="newowner")
         doc = create_single_doc("test_delete_doc")
         map = create_single_map("test_delete_dataset")
         dt = create_single_dataset("test_delete_dataset")
+
+        # change ownlership test config
+        second_dt = create_single_dataset("test_change_ownership", owner=norman)
+        admin_user = get_user_model().objects.create(username="adminuser", is_superuser=True, is_staff=True)
+        new_owner = get_user_model().objects.create(username="newowner")
+
         public_group, _public_created = GroupProfile.objects.get_or_create(
             slug="public_group", title="public_group", access="public"
         )
@@ -251,23 +254,23 @@ class TestResourceManager(GeoNodeBaseTestSupport):
                 "private_group": ["view_resourcebase", "change_resourcebase"],
             },
         }
-        
-        # Attempt owner change with non-admin (should raise PermissionDenied)
+
+        # Attempt owner change with non-admin
         with self.assertRaises(Exception) as cm:
             self.rm.set_permissions(
-                dt.uuid, instance=dt, permissions=perm_spec, owner=new_owner, request_user=norman
+                second_dt.uuid, instance=second_dt, permissions=perm_spec, owner=new_owner, request_user=norman
             )
             self.assertEqual(str(cm.exception), "Only admins are allowed to change the resource owner.")
 
         # Attempt owner change with admin (should succeed)
         self.assertTrue(
             self.rm.set_permissions(
-                dt.uuid, instance=dt, permissions=perm_spec, owner=new_owner, request_user=admin_user
+                second_dt.uuid, instance=second_dt, permissions=perm_spec, owner=new_owner, request_user=admin_user
             )
         )
         dt.refresh_from_db()
-        self.assertEqual(dt.owner, new_owner)
-        
+        self.assertEqual(second_dt.owner, new_owner)
+
         self.assertTrue(self.rm.set_permissions(dt.uuid, instance=dt, permissions=perm_spec))
         self.assertFalse(self.rm.set_permissions("invalid_uuid", instance=None, permissions=perm_spec))
         # Test permissions assigned
