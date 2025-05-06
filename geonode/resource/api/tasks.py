@@ -115,6 +115,10 @@ def resouce_service_dispatcher(self, execution_id: str):
                                         else:
                                             _kwargs[_param_name] = _param_value
 
+                                # Inject the user directly into kwargs if the method accepts it
+                                if "request_user" in _signature.parameters:
+                                    _kwargs["request_user"] = _request.user
+                                
                                 _bindings = _signature.bind(*_args, **_kwargs)
                                 _bindings.apply_defaults()
 

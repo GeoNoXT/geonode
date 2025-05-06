@@ -157,6 +157,7 @@ class GeoServerResourceManager(ResourceManagerInterface):
         uuid: str,
         /,
         instance: ResourceBase = None,
+        request_user: settings.AUTH_USER_MODEL = None,
         owner: settings.AUTH_USER_MODEL = None,
         permissions: dict = {},
         created: bool = False,

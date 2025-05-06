@@ -152,6 +152,7 @@ class ResourceManagerInterface(metaclass=ABCMeta):
         uuid: str,
         /,
         instance: ResourceBase = None,
+        request_user: settings.AUTH_USER_MODEL = None,
         owner: settings.AUTH_USER_MODEL = None,
         permissions: dict = {},
         created: bool = False,
@@ -538,6 +539,7 @@ class ResourceManager(ResourceManagerInterface):
         uuid: str,
         /,
         instance: ResourceBase = None,
+        request_user: settings.AUTH_USER_MODEL = None,
         owner: settings.AUTH_USER_MODEL = None,
         permissions: dict = {},
         created: bool = False,
@@ -555,6 +557,8 @@ class ResourceManager(ResourceManagerInterface):
 
                     # default permissions for owner
                     if owner and owner != _resource.owner:
+                        if not (request_user.is_superuser or request_user.is_staff):
+                            raise Exception("Only admins are allowed to change the resource owner.")
                         _resource.owner = owner
                         ResourceBase.objects.filter(uuid=_resource.uuid).update(owner=owner)
                     _owner = _resource.owner
