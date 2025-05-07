@@ -176,6 +176,8 @@ def import_resource(self, execution_id, /, handler_module_path, action, **kwargs
         return self.name, execution_id
 
     except Exception as e:
+        print("Exception in import_resource", e)
+        logger.error("Exception in import_resource", e)
         call_rollback_function(
             execution_id,
             handlers_module_path=handler_module_path,
